@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学术资源下载器</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f5f5f5; color: #333; }
+        .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+
+        /* Header */
+        header { text-align: center; padding: 30px 0; }
+        header h1 { font-size: 1.8rem; color: #1a1a1a; margin-bottom: 8px; }
+        header p { color: #666; font-size: 0.9rem; }
+
+        /* Card Style */
+        .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); margin-bottom: 20px; }
+        .card h2 { font-size: 1.1rem; color: #333; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
+
+        /* Settings */
+        .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        @media (max-width: 600px) { .settings-grid { grid-template-columns: 1fr; } }
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-group label { font-size: 0.85rem; color: #666; font-weight: 500; }
+        .form-group input { padding: 12px 14px; border: 2px solid #e8e8e8; border-radius: 8px; font-size: 0.95rem; }
+        .form-group input:focus { outline: none; border-color: #667eea; }
+        .form-group.full { grid-column: 1 / -1; }
+        .proxy-note { font-size: 0.8rem; color: #888; margin-top: 4px; }
+        .save-btn { margin-top: 15px; padding: 12px 24px; background: #667eea; color: white; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; }
+        .save-btn:hover { background: #5a6fd6; }
+
+        /* Search Box */
+        .search-row { display: flex; gap: 10px; flex-wrap: wrap; }
+        .search-row input { flex: 1; min-width: 200px; padding: 14px 16px; border: 2px solid #e8e8e8; border-radius: 8px; font-size: 1rem; }
+        .search-row input:focus { border-color: #667eea; outline: none; }
+        .search-row select { padding: 14px 16px; border: 2px solid #e8e8e8; border-radius: 8px; font-size: 1rem; background: white; cursor: pointer; }
+        .search-row button { padding: 14px 28px; background: #667eea; color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; }
+        .search-row button:hover { background: #5a6fd6; }
+        .search-row button:disabled { background: #ccc; cursor: not-allowed; }
+
+        /* Results */
+        .results { max-height: 400px; overflow-y: auto; }
+        .result-item { padding: 16px 0; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; gap: 15px; }
+        .result-item:last-child { border-bottom: none; }
+        .result-info { flex: 1; min-width: 0; }
+        .result-title { font-weight: 600; font-size: 0.95rem; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .result-meta { font-size: 0.85rem; color: #888; }
+        .result-meta span { margin-right: 12px; }
+        .download-btn { padding: 8px 18px; background: #667eea; color: white; border: none; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+        .download-btn:hover { background: #5a6fd6; }
+        .download-btn:disabled { background: #ccc; cursor: not-allowed; }
+
+        /* Downloads */
+        .downloads-list { max-height: 300px; overflow-y: auto; }
+        .download-item { padding: 14px 0; border-bottom: 1px solid #f0f0f0; }
+        .download-item:last-child { border-bottom: none; }
+        .download-title { font-size: 0.9rem; font-weight: 600; margin-bottom: 8px; }
+        .progress { height: 6px; background: #eee; border-radius: 3px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); transition: width 0.3s; }
+        .download-status { font-size: 0.8rem; color: #888; margin-top: 4px; }
+        .download-status.done { color: #28a745; }
+        .download-status.fail { color: #dc3545; }
+
+        /* Loading & Empty */
+        .loading, .empty { text-align: center; padding: 30px; color: #aaa; }
+
+        /* Status indicator */
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #ccc; }
+        .status-dot.ok { background: #28a745; }
+        .status-dot.warn { background: #ffc107; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>学术资源下载器</h1>
+            <p>支持书籍、论文搜索与下载</p>
+        </header>
+
+        <!-- Settings Card -->
+        <div class="card" id="settingsCard">
+            <h2>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                </svg>
+                设置
+                <span class="status-dot" id="statusDot"></span>
+            </h2>
+            <div class="settings-grid">
+                <div class="form-group">
+                    <label>Z-Library 邮箱</label>
+                    <input type="email" id="emailInput" placeholder="your@email.com" />
+                </div>
+                <div class="form-group">
+                    <label>Z-Library 密码</label>
+                    <input type="password" id="passwordInput" placeholder="密码" />
+                </div>
+                <div class="form-group full">
+                    <label>代理地址 <span style="font-weight:400; color:#888;">(可选，中国大陆用户可能需要)</span></label>
+                    <input type="text" id="proxyInput" placeholder="如: http://127.0.0.1:7890，留空则不使用代理" />
+                    <div class="proxy-note">大部分情况不需要填写。如果搜索/下载失败，再尝试配置代理。</div>
+                </div>
+            </div>
+            <button class="save-btn" onclick="saveSettings()">保存设置</button>
+        </div>
+
+        <!-- Search Card -->
+        <div class="card">
+            <h2>搜索资源</h2>
+            <div class="search-row">
+                <input type="text" id="searchInput" placeholder="输入关键词搜索..." />
+                <select id="typeSelect">
+                    <option value="book">书籍</option>
+                    <option value="paper">论文</option>
+                </select>
+                <button id="searchBtn" onclick="doSearch()">搜索</button>
+            </div>
+        </div>
+
+        <!-- Results Card -->
+        <div class="card" id="resultsCard" style="display: none;">
+            <h2>搜索结果 <span id="resultsCount" style="font-weight: normal; color: #888; font-size: 0.9rem;"></span></h2>
+            <div class="results" id="resultsList"><div class="empty">加载中...</div></div>
+        </div>
+
+        <!-- Downloads Card -->
+        <div class="card">
+            <h2>下载管理</h2>
+            <div class="downloads-list" id="downloadsList">
+                <div class="empty">暂无下载任务</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let tasks = {};
+
+        // Load settings on page load
+        fetch('/api/settings').then(r => r.json()).then(data => {
+            document.getElementById('emailInput').value = data.zlibrary_email || '';
+            document.getElementById('proxyInput').value = data.proxy || '';
+            updateStatus();
+        });
+
+        function updateStatus() {
+            const email = document.getElementById('emailInput').value;
+            const dot = document.getElementById('statusDot');
+            if (email) {
+                dot.className = 'status-dot ok';
+                dot.title = '已配置 Z-Library 账号';
+            } else {
+                dot.className = 'status-dot warn';
+                dot.title = '未配置账号，书籍下载可能受限';
+            }
+        }
+
+        async function saveSettings() {
+            const data = {
+                zlibrary_email: document.getElementById('emailInput').value,
+                zlibrary_password: document.getElementById('passwordInput').value,
+                proxy: document.getElementById('proxyInput').value
+            };
+            await fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            updateStatus();
+            alert('设置已保存');
+        }
+
+        async function doSearch() {
+            const query = document.getElementById('searchInput').value.trim();
+            const type = document.getElementById('typeSelect').value;
+            if (!query) return;
+
+            const btn = document.getElementById('searchBtn');
+            btn.disabled = true;
+            btn.textContent = '搜索中...';
+
+            const resultsCard = document.getElementById('resultsCard');
+            const resultsList = document.getElementById('resultsList');
+            resultsCard.style.display = 'block';
+            document.getElementById('resultsCount').textContent = '';
+            resultsList.innerHTML = '<div class="loading">搜索中...</div>';
+
+            try {
+                const resp = await fetch('/api/search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query, resource_type: type })
+                });
+                const data = await resp.json();
+
+                if (!data.results || data.results.length === 0) {
+                    resultsList.innerHTML = '<div class="empty">没有找到结果</div>';
+                } else {
+                    document.getElementById('resultsCount').textContent = `(${data.results.length} 个结果)`;
+                    resultsList.innerHTML = data.results.map(r => `
+                        <div class="result-item">
+                            <div class="result-info">
+                                <div class="result-title">${esc(r.title)}</div>
+                                <div class="result-meta">
+                                    <span>👤 ${esc(r.author)}</span>
+                                    <span>📅 ${r.year || '未知'}</span>
+                                    ${r.publisher ? `<span>🏢 ${esc(r.publisher)}</span>` : ''}
+                                    <span>📕 ${(r.format || 'pdf').toUpperCase()}</span>
+                                    ${r.size ? `<span>💾 ${r.size}</span>` : ''}
+                                </div>
+                            </div>
+                            <button class="download-btn" onclick='startDownload(${JSON.stringify(r).replace(/'/g, "\\'")})'>下载</button>
+                        </div>
+                    `).join('');
+                }
+            } catch (e) {
+                resultsList.innerHTML = '<div class="empty">搜索失败: ' + e.message + '</div>';
+            }
+
+            btn.disabled = false;
+            btn.textContent = '搜索';
+        }
+
+        async function startDownload(result) {
+            // Create task entry immediately
+            const taskId = 'task_' + Date.now();
+            tasks[taskId] = { title: result.title, status: 'starting', progress: 0 };
+            renderDownloads();
+
+            try {
+                const resp = await fetch('/api/download', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ result })
+                });
+                const data = await resp.json();
+
+                if (data.task_id) {
+                    // Store the server task_id for polling
+                    tasks[taskId].server_id = data.task_id;
+                    tasks[taskId].status = 'downloading';
+                    renderDownloads();
+
+                    // Start polling for progress
+                    pollProgress(taskId, data.task_id);
+                } else if (data.task) {
+                    Object.assign(tasks[taskId], data.task);
+                    renderDownloads();
+                }
+            } catch (e) {
+                tasks[taskId].status = 'failed';
+                tasks[taskId].error = e.message;
+                renderDownloads();
+            }
+        }
+
+        function pollProgress(localId, serverId) {
+            const interval = setInterval(async () => {
+                try {
+                    const resp = await fetch('/api/tasks/' + serverId);
+                    const data = await resp.json();
+
+                    if (data.task) {
+                        tasks[localId].status = data.task.status;
+                        tasks[localId].progress = data.task.progress;
+                        tasks[localId].path = data.task.path;
+                        tasks[localId].error = data.task.error;
+                        renderDownloads();
+
+                        // Stop polling when done or failed
+                        if (data.task.status === 'completed' || data.task.status === 'failed') {
+                            clearInterval(interval);
+                        }
+                    } else {
+                        clearInterval(interval);
+                    }
+                } catch (e) {
+                    clearInterval(interval);
+                }
+            }, 500);  // Poll every 500ms
+        }
+
+        function renderDownloads() {
+            const list = document.getElementById('downloadsList');
+            const entries = Object.values(tasks);
+            if (entries.length === 0) {
+                list.innerHTML = '<div class="empty">暂无下载任务</div>';
+                return;
+            }
+            list.innerHTML = entries.map((t, i) => `
+                <div class="download-item">
+                    <div class="download-title">${esc(t.title)}</div>
+                    <div class="progress">
+                        <div class="progress-fill" style="width:${(t.progress||0)*100}%"></div>
+                    </div>
+                    <div class="download-status ${t.status}">${getStatusText(t)}</div>
+                </div>
+            `).join('');
+        }
+
+        function getStatusText(t) {
+            if (t.status === 'completed') return '✓ 完成';
+            if (t.status === 'failed') return '✗ 失败: ' + (t.error || '');
+            if (t.status === 'downloading') return `下载中 ${Math.round((t.progress||0)*100)}%`;
+            return '等待中...';
+        }
+
+        function esc(s) { return (s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+        document.getElementById('searchInput').addEventListener('keypress', e => { if(e.key==='Enter') doSearch(); });
+    </script>
+</body>
+</html>
