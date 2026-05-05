@@ -87,6 +87,10 @@ class CrossrefDownloader(BaseDownloader):
                     publisher=item.get('container-title', [''])[0] if item.get('container-title') else None
                 ))
 
+        except requests.RequestException as e:
+            pass
+        except (json.JSONDecodeError, KeyError, TypeError) as e:
+            pass
         except Exception as e:
             pass
 

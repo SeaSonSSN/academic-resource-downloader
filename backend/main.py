@@ -185,27 +185,14 @@ async def run_download(task_id: str, result: SearchResult, result_type: Resource
         for name, dl in configs.items():
             if dl.supports(result_type):
                 download_tasks[task_id]["status"] = "downloading"
-
-                # Create a task that will be passed to downloader
-                task = DownloadTask(
-                    id=task_id,
-                    title=result.title,
-                    status="pending",
-                    progress=0.0
-                )
-
-                # For now, do download directly and update progress
-                # The actual download will update task object
-                for name, dl in configs.items():
-                    if dl.supports(result_type):
-                        final_task = await dl.download(result, settings.download_dir)
-                        download_tasks[task_id].update({
-                            "status": final_task.status,
-                            "progress": final_task.progress,
-                            "path": final_task.path,
-                            "error": final_task.error
-                        })
-                        return
+                final_task = await dl.download(result, settings.download_dir)
+                download_tasks[task_id].update({
+                    "status": final_task.status,
+                    "progress": final_task.progress,
+                    "path": final_task.path,
+                    "error": final_task.error
+                })
+                return
 
         download_tasks[task_id]["status"] = "failed"
         download_tasks[task_id]["error"] = "No downloader found"

@@ -26,7 +26,7 @@ class ZLibraryDownloader(BaseDownloader):
         super().__init__()
         self.email = email or os.getenv("ZLIBRARY_EMAIL", "")
         self.password = password or os.getenv("ZLIBRARY_PASSWORD", "")
-        self.proxy = proxy or os.getenv("PROXY", "http://127.0.0.1:7890")
+        self.proxy = proxy or os.getenv("PROXY", None)
 
         self._session = None
         self._cookies = None

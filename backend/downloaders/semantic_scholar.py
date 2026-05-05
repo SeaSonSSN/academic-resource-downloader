@@ -86,6 +86,10 @@ class SemanticScholarDownloader(BaseDownloader):
                     publisher=paper.get("venue")  # venue = journal/conference
                 ))
 
+        except requests.RequestException as e:
+            pass
+        except (ValueError, KeyError, TypeError) as e:
+            pass
         except Exception as e:
             pass
 

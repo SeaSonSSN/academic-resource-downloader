@@ -18,7 +18,7 @@ class ArxivDownloader(BaseDownloader):
 
     def __init__(self, proxy: str = None):
         super().__init__()
-        self.proxy = proxy or os.getenv("PROXY", "http://127.0.0.1:7890")
+        self.proxy = proxy or os.getenv("PROXY", None)
         self._last_request_time = 0
 
     def supports(self, resource_type: ResourceType) -> bool:
@@ -84,6 +84,8 @@ class ArxivDownloader(BaseDownloader):
                         url=pdf_link
                     ))
 
+        except requests.RequestException as e:
+            pass
         except Exception as e:
             pass
 
@@ -121,6 +123,12 @@ class ArxivDownloader(BaseDownloader):
             task.progress = 1.0
             task.path = str(filepath)
 
+        except requests.RequestException as e:
+            task.status = "failed"
+            task.error = str(e)
+        except IOError as e:
+            task.status = "failed"
+            task.error = f"File error: {str(e)}"
         except Exception as e:
             task.status = "failed"
             task.error = str(e)
