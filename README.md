@@ -57,9 +57,7 @@ python main.py
 │   │   ├── crossref.py       # Crossref 下载器
 │   │   └── semantic_scholar.py
 │   └── static/               # Web 前端文件
-│       ├── index.html
-│       └── style.css (merged into index.html)
-├── legacy/                   # 旧的脚本（仅供参考）
+│       └── index.html
 ├── main.py                   # 启动入口
 └── requirements.txt          # Python 依赖
 ```
